@@ -3,7 +3,7 @@ const HTMLWebpackPlugin = require("html-webpack-plugin");
 const DotEnv = require("dotenv-webpack");
 
 module.exports = {
-  mode: process.env.ENVIRONMENT === "PROD" ? "production" : development,
+  mode: process.env.ENVIRONMENT === "PROD" ? "production" : "development",
   entry: "./src/index.js",
   output: {
     path: path.resolve(__dirname, "dist"),
