@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "open ./dist/index.html"
+    "start": "npx webpack && open ./dist/index.html"
   },
   "keywords": [],
   "author": "",
