@@ -1,4 +1,5 @@
 let localStream;
+import "./styles.css";
 
 const init = async () => {
   const localStream = await navigator.mediaDevices.getUserMedia({
