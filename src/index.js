@@ -1,4 +1,5 @@
 import "./styles.css";
+import AgoraRTM from "./agora-rtm-sdk-1.4.4";
 
 const iceServersConfig = {
   iceServers: [
@@ -7,10 +8,38 @@ const iceServersConfig = {
     },
   ],
 };
+const uid = String(Math.floor(Math.random() * 100000));
+const APP_ID = process.env.APP_ID;
 
 let localStream;
+let client, channel;
 
-const createPeerConnection = async () => {
+console.log("agora logs", { AgoraRTM });
+
+const init = async () => {
+  const client = new AgoraRTM.createInstance(APP_ID);
+  await client.login({
+    uid,
+    token: null,
+  });
+
+  // TODO: Handle room id
+  const channel = await client.createChannel("main");
+  channel.join();
+
+  channel.on("MemberJoined", handleUserJoined);
+
+  localStream = await navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: false,
+  });
+  document.getElementById("user-1").srcObject = localStream;
+  await createPeerConnection();
+};
+
+init();
+
+async function createPeerConnection() {
   const peerConnection = new RTCPeerConnection(iceServersConfig);
   const remoteStream = new MediaStream();
   document.getElementById("user-2").srcObject = remoteStream;
@@ -37,16 +66,8 @@ const createPeerConnection = async () => {
   const offer = await peerConnection.createOffer();
   await peerConnection.setLocalDescription(offer); // This fires onicecandidate event
   console.log("Offer", offer);
-};
+}
 
-const init = async () => {
-  console.log("init called");
-  localStream = await navigator.mediaDevices.getUserMedia({
-    video: true,
-    audio: false,
-  });
-  document.getElementById("user-1").srcObject = localStream;
-  await createPeerConnection();
-};
-
-init();
+async function handleUserJoined(memberId) {
+  console.log("New member joined", memberId);
+}
