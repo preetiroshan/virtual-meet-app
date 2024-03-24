@@ -14,7 +14,7 @@ const APP_ID = process.env.APP_ID;
 
 let localStream: MediaStream;
 let remoteStream: MediaStream;
-let client: any, channel;
+let client: any, channel: any;
 let peerConnection: RTCPeerConnection;
 const user1Display = document.getElementById("user-1") as HTMLMediaElement;
 const user2Display = document.getElementById("user-2") as HTMLMediaElement;
@@ -35,6 +35,8 @@ const init = async () => {
 
   channel.on("MemberJoined", handleUserJoined);
 
+  channel.on("MemberLeft", handleUserLeave);
+
   client.on("MessageFromPeer", handleMessageFromPeer);
 
   localStream = await navigator.mediaDevices.getUserMedia({
@@ -51,6 +53,7 @@ async function createPeerConnection(memberId: string) {
   remoteStream = new MediaStream();
   console.log("media stream", remoteStream.active);
   user2Display.srcObject = remoteStream;
+  user2Display.style.display = "block";
 
   if (!localStream) {
     localStream = await navigator.mediaDevices.getUserMedia({
@@ -154,3 +157,17 @@ async function handleMessageFromPeer(
     }
   }
 }
+
+async function handleUserLeave() {
+  console.log("@debug-handle user leave");
+  user2Display.style.display = "none";
+}
+
+async function leaveChannel() {
+  await channel.leave();
+  await client.logout();
+}
+
+window.addEventListener("beforeunload", () => {
+  leaveChannel();
+});
