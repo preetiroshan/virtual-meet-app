@@ -4,7 +4,10 @@ const DotEnv = require("dotenv-webpack");
 
 module.exports = {
   mode: process.env.ENVIRONMENT === "PROD" ? "production" : "development",
-  entry: "./src/index.ts",
+  entry: {
+    main: "./src/index.ts",
+    lobby: "./src/lobby.ts",
+  },
   output: {
     path: path.resolve(__dirname, "dist"),
     filename:
@@ -33,8 +36,17 @@ module.exports = {
     ],
   },
   plugins: [
-    new HTMLWebpackPlugin({ template: "./src/index.html" }),
     new DotEnv(),
+    new HTMLWebpackPlugin({
+      filename: "index.html",
+      template: "./src/index.html",
+      chunks: ["main"],
+    }),
+    new HTMLWebpackPlugin({
+      filename: "lobby.html",
+      template: "./src/lobby.html",
+      chunks: ["lobby"],
+    }),
   ],
   devtool: "inline-source-map",
   devServer: {

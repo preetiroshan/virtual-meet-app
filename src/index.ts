@@ -20,6 +20,10 @@ const user1Display = document.getElementById("user-1") as HTMLMediaElement;
 const user2Display = document.getElementById("user-2") as HTMLMediaElement;
 
 console.log("@debug-agora logs", { AgoraRTM });
+const roomId = new URLSearchParams(window.location.search).get("roomId");
+if (!roomId) {
+  window.location.pathname = "/lobby.html";
+}
 
 const init = async () => {
   // @ts-ignore
