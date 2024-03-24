@@ -43,6 +43,6 @@ module.exports = {
     open: true,
   },
   resolve: {
-    extensions: [".tsx", ".ts", ".js"],
+    extensions: [".ts", ".js"],
   },
 };
