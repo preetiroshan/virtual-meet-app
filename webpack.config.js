@@ -4,7 +4,7 @@ const DotEnv = require("dotenv-webpack");
 
 module.exports = {
   mode: process.env.ENVIRONMENT === "PROD" ? "production" : "development",
-  entry: "./src/index.js",
+  entry: "./src/index.ts",
   output: {
     path: path.resolve(__dirname, "dist"),
     filename:
@@ -25,6 +25,11 @@ module.exports = {
           loader: "babel-loader",
         },
       },
+      {
+        test: /\.tsx?$/,
+        use: "ts-loader",
+        exclude: /node_modules/,
+      },
     ],
   },
   plugins: [
@@ -36,5 +41,8 @@ module.exports = {
     hot: true,
     port: 3000,
     open: true,
+  },
+  resolve: {
+    extensions: [".tsx", ".ts", ".js"],
   },
 };
