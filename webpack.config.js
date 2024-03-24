@@ -7,13 +7,23 @@ module.exports = {
   entry: "./src/index.js",
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "bundle.js",
+    filename:
+      process.env.ENVIRONMENT === "PROD"
+        ? "[name].[contenthash].bundle.js"
+        : "[name].bundle.js",
   },
   module: {
     rules: [
       {
         test: /\.css$/,
         use: ["style-loader", "css-loader"],
+      },
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "babel-loader",
+        },
       },
     ],
   },
