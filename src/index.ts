@@ -1,5 +1,6 @@
 import "./styles.css";
 import AgoraRTM from "./agora-rtm-sdk-1.4.4";
+import { IMessageFromPeer } from "./types";
 
 const iceServersConfig = {
   iceServers: [
@@ -12,7 +13,9 @@ const uid = String(Math.floor(Math.random() * 100000));
 const APP_ID = process.env.APP_ID;
 
 let localStream: MediaStream;
+let remoteStream: MediaStream;
 let client: any, channel;
+let peerConnection: RTCPeerConnection;
 const user1Display = document.getElementById("user-1") as HTMLMediaElement;
 const user2Display = document.getElementById("user-2") as HTMLMediaElement;
 
@@ -43,16 +46,23 @@ const init = async () => {
 
 init();
 
-async function createOffer(memberId: string) {
-  const peerConnection = new RTCPeerConnection(iceServersConfig);
-  const remoteStream = new MediaStream();
+async function createPeerConnection(memberId: string) {
+  peerConnection = new RTCPeerConnection(iceServersConfig);
+  remoteStream = new MediaStream();
+  console.log("media stream", remoteStream.active);
   user2Display.srcObject = remoteStream;
 
-  localStream &&
-    localStream.getTracks().forEach((track) => {
-      console.log("@debug-localstream track", track);
-      peerConnection.addTrack(track, localStream);
+  if (!localStream) {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false,
     });
+    user1Display.srcObject = localStream;
+  }
+
+  localStream.getTracks().forEach((track) => {
+    peerConnection.addTrack(track, localStream);
+  });
 
   // This is triggered when tracks are received from peer. These tracks need to be added in the remote stream element
   peerConnection.ontrack = (event) => {
@@ -64,19 +74,45 @@ async function createOffer(memberId: string) {
   };
 
   peerConnection.onicecandidate = async (event) => {
-    if (event.candidate) {
-      console.log("@debug-New ice candidate", event.candidate);
+    const { candidate } = event;
+    if (candidate) {
+      console.log("@debug-New ice candidate", candidate);
+      client.sendMessageToPeer(
+        { text: JSON.stringify({ type: "candidate", candidate }) },
+        memberId
+      );
     }
   };
+}
+
+async function createOffer(memberId: string) {
+  await createPeerConnection(memberId);
 
   const offer = await peerConnection.createOffer();
   await peerConnection.setLocalDescription(offer); // This fires onicecandidate event
 
   client.sendMessageToPeer(
-    { text: JSON.stringify({ type: "offer" }) },
+    { text: JSON.stringify({ type: "offer", offer: offer }) },
     memberId
   );
   console.log("@debug-Offer", offer);
+}
+
+async function createAnswer(
+  memberId: string,
+  offer: RTCSessionDescriptionInit
+) {
+  await createPeerConnection(memberId);
+  await peerConnection.setRemoteDescription(offer); // This fires onicecandidate event
+
+  const answer = await peerConnection.createAnswer();
+  console.log("@debug-answer", { ...answer });
+  await peerConnection.setLocalDescription(answer); // T
+  answer &&
+    client.sendMessageToPeer(
+      { text: JSON.stringify({ type: "answer", answer: answer }) },
+      memberId
+    );
 }
 
 async function handleUserJoined(memberId: string) {
@@ -84,6 +120,37 @@ async function handleUserJoined(memberId: string) {
   // create an offer when a member joins
   await createOffer(memberId);
 }
-async function handleMessageFromPeer(message: string, memberId: string) {
+
+async function addAnswer(answer: RTCSessionDescriptionInit) {
+  if (!peerConnection.currentRemoteDescription) {
+    // console.log("answer old", answer.sdp);
+    // answer.sdp += "\n";
+    // console.log("answer new", answer.sdp);
+    await peerConnection.setRemoteDescription(answer);
+  }
+}
+async function handleMessageFromPeer(
+  message: { text: string },
+  memberId: string
+) {
   console.log("@debug-Message from peer", message);
+  const messageContent = JSON.parse(message.text) as IMessageFromPeer;
+  // todo check nesting
+  switch (messageContent.type) {
+    case "offer": {
+      createAnswer(memberId, messageContent.offer);
+      break;
+    }
+    case "answer": {
+      addAnswer(messageContent.answer);
+      break;
+    }
+
+    case "candidate": {
+      if (peerConnection) {
+        peerConnection.addIceCandidate(messageContent.candidate);
+        break;
+      }
+    }
+  }
 }
