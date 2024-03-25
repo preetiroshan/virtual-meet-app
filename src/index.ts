@@ -1,6 +1,8 @@
 import "./styles.css";
 import AgoraRTM from "./agora-rtm-sdk-1.4.4";
 import { IMessageFromPeer } from "./types";
+import { controlIcons } from "./utils";
+import { colors } from "./constants";
 
 const iceServersConfig = {
   iceServers: [
@@ -62,7 +64,7 @@ async function createPeerConnection(memberId: string) {
   if (!localStream) {
     localStream = await navigator.mediaDevices.getUserMedia({
       video: true,
-      audio: false,
+      audio: true,
     });
     user1Display.srcObject = localStream;
   }
@@ -175,3 +177,33 @@ async function leaveChannel() {
 window.addEventListener("beforeunload", () => {
   leaveChannel();
 });
+
+const controls = document.getElementsByClassName("controls-container");
+Array.prototype.forEach.call(controls, (control: any) => {
+  control.addEventListener("click", () => {
+    const controlImg = control.getElementsByTagName("img")?.[0];
+    const controlId = control.getAttribute("id");
+    if (controlId === "end-call") {
+      leaveChannel();
+      window.location = "/lobby.html" as unknown as Location;
+      return;
+    }
+    const currentState = controlImg.getAttribute("src").includes("On")
+      ? "ON"
+      : "OFF";
+    const newState = currentState === "ON" ? "OFF" : "ON";
+    const newImg = controlIcons[controlId][newState];
+    controlImg.src = newImg;
+    control.style.backgroundColor = colors[newState === "ON" ? "white" : "red"];
+    toggleControl(controlId);
+  });
+});
+
+const toggleControl = async (controlId: string) => {
+  const toggleFunc =
+    localStream[controlIcons[controlId].onToggle].bind(localStream);
+  toggleFunc().forEach((track: any) => {
+    const currentStatus = !!track.enabled;
+    track.enabled = !currentStatus;
+  });
+};
