@@ -12,5 +12,6 @@
     "suppressImplicitAnyIndexErrors": true,
     "ignoreDeprecations": "5.0",
     "sourceMap": true
-  }
+  },
+  "files": ["./custom.d.ts"]
 }
